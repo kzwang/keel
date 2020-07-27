@@ -80,15 +80,19 @@ class ApplicationService(
       config.name,
       environment,
       status.artifactVersion,
-      status.type) ?: throw InvalidConstraintException(
-      "${config.name}/$environment/${status.type}/${status.artifactVersion}", "constraint not found")
+      status.type
+    ) ?: throw InvalidConstraintException(
+      "${config.name}/$environment/${status.type}/${status.artifactVersion}", "constraint not found"
+    )
 
     repository.storeConstraintState(
       currentState.copy(
         status = status.status,
         comment = status.comment ?: currentState.comment,
         judgedAt = Instant.now(),
-        judgedBy = user))
+        judgedBy = user
+      )
+    )
   }
 
   fun pin(user: String, application: String, pin: EnvironmentArtifactPin) {
@@ -124,7 +128,8 @@ class ApplicationService(
       deliveryConfig = config,
       artifact = artifact,
       version = version,
-      targetEnvironment = targetEnvironment)
+      targetEnvironment = targetEnvironment
+    )
   }
 
   /**

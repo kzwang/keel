@@ -45,10 +45,11 @@ class EnvironmentConstraintRunner(
   ) {
     val pendingVersionsToCheck: MutableSet<String> =
       when (envContext.environment.constraints.anyStateful) {
-        true -> repository
-          .pendingConstraintVersionsFor(envContext.deliveryConfig.name, envContext.environment.name)
-          .filter { envContext.versions.contains(it) }
-          .toMutableSet()
+        true ->
+          repository
+            .pendingConstraintVersionsFor(envContext.deliveryConfig.name, envContext.environment.name)
+            .filter { envContext.versions.contains(it) }
+            .toMutableSet()
         false -> mutableSetOf()
       }
 

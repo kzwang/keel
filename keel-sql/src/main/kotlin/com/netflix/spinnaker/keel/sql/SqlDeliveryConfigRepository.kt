@@ -113,7 +113,8 @@ class SqlDeliveryConfigRepository(
                   .where(
                     CURRENT_CONSTRAINT.APPLICATION.eq(application),
                     CURRENT_CONSTRAINT.ENVIRONMENT_UID.eq(envUid),
-                    CURRENT_CONSTRAINT.TYPE.eq(type))
+                    CURRENT_CONSTRAINT.TYPE.eq(type)
+                  )
                   .execute()
               }
             txn
@@ -142,9 +143,12 @@ class SqlDeliveryConfigRepository(
                     row(
                       ENVIRONMENT_ARTIFACT_VERSIONS.ENVIRONMENT_UID,
                       ENVIRONMENT_ARTIFACT_VERSIONS.ARTIFACT_UID,
-                      ENVIRONMENT_ARTIFACT_VERSIONS.ARTIFACT_VERSION)
+                      ENVIRONMENT_ARTIFACT_VERSIONS.ARTIFACT_VERSION
+                    )
                       .`in`(
-                        it.map { t -> row(envUid, t.first, t.second) }))
+                        it.map { t -> row(envUid, t.first, t.second) }
+                      )
+                  )
                   .execute()
               }
             txn.select(ENVIRONMENT_RESOURCE.RESOURCE_UID)
@@ -157,7 +161,9 @@ class SqlDeliveryConfigRepository(
                   .where(
                     row(ENVIRONMENT_RESOURCE.ENVIRONMENT_UID, ENVIRONMENT_RESOURCE.RESOURCE_UID)
                       .`in`(
-                        it.map { resourceId -> row(envUid, resourceId) }))
+                        it.map { resourceId -> row(envUid, resourceId) }
+                      )
+                  )
                   .execute()
               }
             txn
@@ -194,7 +200,8 @@ class SqlDeliveryConfigRepository(
         txn.deleteFrom(ENVIRONMENT_RESOURCE)
           .where(
             ENVIRONMENT_RESOURCE.ENVIRONMENT_UID.`in`(envUids),
-            ENVIRONMENT_RESOURCE.RESOURCE_UID.`in`(resourceUids))
+            ENVIRONMENT_RESOURCE.RESOURCE_UID.`in`(resourceUids)
+          )
           .execute()
         // delete resources
         txn.deleteFrom(RESOURCE)
@@ -236,7 +243,8 @@ class SqlDeliveryConfigRepository(
         txn.deleteFrom(DELIVERY_CONFIG_ARTIFACT)
           .where(
             DELIVERY_CONFIG_ARTIFACT.DELIVERY_CONFIG_UID.eq(configUid),
-            DELIVERY_CONFIG_ARTIFACT.ARTIFACT_UID.`in`(artifactUids))
+            DELIVERY_CONFIG_ARTIFACT.ARTIFACT_UID.`in`(artifactUids)
+          )
           .execute()
         // delete artifact
         txn.deleteFrom(DELIVERY_ARTIFACT)
@@ -313,13 +321,16 @@ class SqlDeliveryConfigRepository(
       artifacts.forEach { artifact ->
         jooq.insertInto(DELIVERY_CONFIG_ARTIFACT)
           .set(DELIVERY_CONFIG_ARTIFACT.DELIVERY_CONFIG_UID, uid)
-          .set(DELIVERY_CONFIG_ARTIFACT.ARTIFACT_UID, jooq
-            .select(DELIVERY_ARTIFACT.UID)
-            .from(DELIVERY_ARTIFACT)
-            .where(DELIVERY_ARTIFACT.NAME.eq(artifact.name))
-            .and(DELIVERY_ARTIFACT.TYPE.eq(artifact.type))
-            .and(DELIVERY_ARTIFACT.DELIVERY_CONFIG_NAME.eq(artifact.deliveryConfigName))
-            .and(DELIVERY_ARTIFACT.REFERENCE.eq(artifact.reference)))
+          .set(
+            DELIVERY_CONFIG_ARTIFACT.ARTIFACT_UID,
+            jooq
+              .select(DELIVERY_ARTIFACT.UID)
+              .from(DELIVERY_ARTIFACT)
+              .where(DELIVERY_ARTIFACT.NAME.eq(artifact.name))
+              .and(DELIVERY_ARTIFACT.TYPE.eq(artifact.type))
+              .and(DELIVERY_ARTIFACT.DELIVERY_CONFIG_NAME.eq(artifact.deliveryConfigName))
+              .and(DELIVERY_ARTIFACT.REFERENCE.eq(artifact.reference))
+          )
           .onDuplicateKeyIgnore()
           .execute()
       }
@@ -567,16 +578,18 @@ class SqlDeliveryConfigRepository(
           ENVIRONMENT_ARTIFACT_CONSTRAINT.ARTIFACT_VERSION.eq(artifactVersion),
           ENVIRONMENT_ARTIFACT_CONSTRAINT.TYPE.eq(type)
         )
-        .fetchOne { (deliveryConfigName,
-                      environmentName,
-                      artifactVersion,
-                      constraintType,
-                      status,
-                      createdAt,
-                      judgedBy,
-                      judgedAt,
-                      comment,
-                      attributes) ->
+        .fetchOne { (
+          deliveryConfigName,
+          environmentName,
+          artifactVersion,
+          constraintType,
+          status,
+          createdAt,
+          judgedBy,
+          judgedAt,
+          comment,
+          attributes
+        ) ->
           ConstraintState(
             deliveryConfigName,
             environmentName,
@@ -615,16 +628,18 @@ class SqlDeliveryConfigRepository(
         .where(ENVIRONMENT_ARTIFACT_CONSTRAINT.UID.eq(uid.toString()))
         .and(ENVIRONMENT.UID.eq(ENVIRONMENT_ARTIFACT_CONSTRAINT.ENVIRONMENT_UID))
         .and(DELIVERY_CONFIG.UID.eq(ENVIRONMENT.DELIVERY_CONFIG_UID))
-        .fetchOne { (deliveryConfigName,
-                      environmentName,
-                      artifactVersion,
-                      constraintType,
-                      status,
-                      createdAt,
-                      judgedBy,
-                      judgedAt,
-                      comment,
-                      attributes) ->
+        .fetchOne { (
+          deliveryConfigName,
+          environmentName,
+          artifactVersion,
+          constraintType,
+          status,
+          createdAt,
+          judgedBy,
+          judgedAt,
+          comment,
+          attributes
+        ) ->
           ConstraintState(
             deliveryConfigName,
             environmentName,
@@ -651,13 +666,15 @@ class SqlDeliveryConfigRepository(
         .from(CURRENT_CONSTRAINT)
         .where(
           CURRENT_CONSTRAINT.ENVIRONMENT_UID.eq(envUidSelect),
-          CURRENT_CONSTRAINT.TYPE.eq(type))
+          CURRENT_CONSTRAINT.TYPE.eq(type)
+        )
         .fetch { (application, envUid) ->
           jooq.deleteFrom(CURRENT_CONSTRAINT)
             .where(
               CURRENT_CONSTRAINT.APPLICATION.eq(application),
               CURRENT_CONSTRAINT.ENVIRONMENT_UID.eq(envUid),
-              CURRENT_CONSTRAINT.TYPE.eq(type))
+              CURRENT_CONSTRAINT.TYPE.eq(type)
+            )
             .execute()
         }
 
@@ -710,7 +727,8 @@ class SqlDeliveryConfigRepository(
         .select(
           CURRENT_CONSTRAINT.ENVIRONMENT_UID,
           ENVIRONMENT.NAME,
-          DELIVERY_CONFIG.NAME)
+          DELIVERY_CONFIG.NAME
+        )
         .from(CURRENT_CONSTRAINT)
         .innerJoin(ENVIRONMENT)
         .on(ENVIRONMENT.UID.eq(CURRENT_CONSTRAINT.ENVIRONMENT_UID))
@@ -723,15 +741,17 @@ class SqlDeliveryConfigRepository(
         }
     }
 
-    return constraintResult.mapNotNull { (envId,
-                                           artifactVersion,
-                                           type,
-                                           createdAt,
-                                           status,
-                                           judgedBy,
-                                           judgedAt,
-                                           comment,
-                                           attributes) ->
+    return constraintResult.mapNotNull { (
+      envId,
+      artifactVersion,
+      type,
+      createdAt,
+      status,
+      judgedBy,
+      judgedAt,
+      comment,
+      attributes
+    ) ->
       if (deliveryConfigsByEnv.containsKey(envId) && environmentNames.containsKey(envId)) {
         ConstraintState(
           deliveryConfigsByEnv[envId]
@@ -755,7 +775,8 @@ class SqlDeliveryConfigRepository(
             "envId=$envId, " +
             "artifactVersion=$artifactVersion, " +
             "type=$type, " +
-            " does not belong to a valid environment.")
+            " does not belong to a valid environment."
+        )
         null
       }
     }
@@ -786,16 +807,18 @@ class SqlDeliveryConfigRepository(
         .where(ENVIRONMENT_ARTIFACT_CONSTRAINT.ENVIRONMENT_UID.eq(environmentUID))
         .orderBy(ENVIRONMENT_ARTIFACT_CONSTRAINT.CREATED_AT.desc())
         .limit(limit)
-        .fetch { (deliveryConfigName,
-                   environmentName,
-                   artifactVersion,
-                   constraintType,
-                   status,
-                   createdAt,
-                   judgedBy,
-                   judgedAt,
-                   comment,
-                   attributes) ->
+        .fetch { (
+          deliveryConfigName,
+          environmentName,
+          artifactVersion,
+          constraintType,
+          status,
+          createdAt,
+          judgedBy,
+          judgedAt,
+          comment,
+          attributes
+        ) ->
           ConstraintState(
             deliveryConfigName,
             environmentName,
@@ -851,16 +874,18 @@ class SqlDeliveryConfigRepository(
           ENVIRONMENT_ARTIFACT_CONSTRAINT.ENVIRONMENT_UID.eq(environmentUID),
           ENVIRONMENT_ARTIFACT_CONSTRAINT.ARTIFACT_VERSION.eq(artifactVersion)
         )
-        .fetch { (deliveryConfigName,
-                   environmentName,
-                   artifactVersion,
-                   constraintType,
-                   status,
-                   createdAt,
-                   judgedBy,
-                   judgedAt,
-                   comment,
-                   attributes) ->
+        .fetch { (
+          deliveryConfigName,
+          environmentName,
+          artifactVersion,
+          constraintType,
+          status,
+          createdAt,
+          judgedBy,
+          judgedAt,
+          comment,
+          attributes
+        ) ->
           ConstraintState(
             deliveryConfigName,
             environmentName,
@@ -891,7 +916,8 @@ class SqlDeliveryConfigRepository(
         .from(ENVIRONMENT_ARTIFACT_CONSTRAINT)
         .where(
           ENVIRONMENT_ARTIFACT_CONSTRAINT.ENVIRONMENT_UID.eq(environmentUID),
-          ENVIRONMENT_ARTIFACT_CONSTRAINT.STATUS.eq(ConstraintStatus.PENDING.toString()))
+          ENVIRONMENT_ARTIFACT_CONSTRAINT.STATUS.eq(ConstraintStatus.PENDING.toString())
+        )
         .fetch(ENVIRONMENT_ARTIFACT_CONSTRAINT.ARTIFACT_VERSION)
     }
   }
@@ -945,7 +971,8 @@ class SqlDeliveryConfigRepository(
           jooq.deleteFrom(ENVIRONMENT_ARTIFACT_QUEUED_APPROVAL)
             .where(
               ENVIRONMENT_ARTIFACT_QUEUED_APPROVAL.ENVIRONMENT_UID.eq(envUid),
-              ENVIRONMENT_ARTIFACT_QUEUED_APPROVAL.ARTIFACT_VERSION.eq(artifactVersion))
+              ENVIRONMENT_ARTIFACT_QUEUED_APPROVAL.ARTIFACT_VERSION.eq(artifactVersion)
+            )
             .execute()
         }
     }
@@ -1037,7 +1064,8 @@ class SqlDeliveryConfigRepository(
         .innerJoin(ENVIRONMENT).on(DELIVERY_CONFIG.UID.eq(ENVIRONMENT.DELIVERY_CONFIG_UID))
         .where(
           DELIVERY_CONFIG.NAME.eq(deliveryConfigName),
-          ENVIRONMENT.NAME.eq(environmentName))
+          ENVIRONMENT.NAME.eq(environmentName)
+        )
         .fetchOne(ENVIRONMENT.UID)
     }
 
